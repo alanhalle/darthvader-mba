@@ -1,0 +1,327 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Darth Vader MBA — School of Hard Nos</title>
+  <link rel="canonical" href="https://darthvader.mba/" />
+  <meta name="description" content="Nominate your boss for the honorary degree they earned by being terrible. Free speech isn't free. It costs real money. Vote." />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #0a0a0f;
+      --surface: #111118;
+      --red: #c0392b;
+      --red-dim: #8b2020;
+      --text: #e8e8e0;
+      --muted: #888880;
+      --border: #222228;
+      --gold: #c9a227;
+    }
+
+    body {
+      font-family: Georgia, "Times New Roman", serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.75;
+    }
+
+    a { color: var(--red); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .hero {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 5rem 2rem 3rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .eyebrow {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      font-size: 0.75rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--red);
+      margin-bottom: 1.25rem;
+    }
+
+    h1 {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      font-size: clamp(2.2rem, 6vw, 3.8rem);
+      line-height: 1.05;
+      letter-spacing: -0.02em;
+      margin-bottom: 1.25rem;
+      color: var(--text);
+    }
+
+    .tagline {
+      font-size: 1.2rem;
+      color: var(--muted);
+      font-style: italic;
+      margin-bottom: 0.75rem;
+      max-width: 580px;
+    }
+
+    .tagline-2 {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      font-size: 1rem;
+      color: var(--gold);
+      letter-spacing: 0.03em;
+      margin-bottom: 2rem;
+    }
+
+    .cta-group {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-top: 2rem;
+    }
+
+    .btn {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      font-size: 0.95rem;
+      font-weight: 600;
+      padding: 0.85rem 2rem;
+      border-radius: 4px;
+      cursor: pointer;
+      letter-spacing: 0.02em;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .btn-primary {
+      background: var(--red);
+      color: #fff;
+    }
+
+    .btn-primary:hover { background: var(--red-dim); text-decoration: none; }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover { color: var(--text); border-color: var(--muted); text-decoration: none; }
+
+    section {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 3rem 2rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    h2 {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      margin-bottom: 1.25rem;
+      color: var(--text);
+    }
+
+    p {
+      font-size: 1.05rem;
+      margin-bottom: 1.25rem;
+      max-width: 640px;
+      color: var(--text);
+    }
+
+    .product-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      margin-top: 1.5rem;
+    }
+
+    @media (max-width: 600px) {
+      .product-grid { grid-template-columns: 1fr; }
+    }
+
+    .product-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 1.75rem;
+    }
+
+    .product-card h3 {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 0.75rem;
+    }
+
+    .product-card p {
+      font-size: 0.95rem;
+      color: var(--muted);
+      margin-bottom: 1rem;
+    }
+
+    .price {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 1rem;
+    }
+
+    .voting-tiers {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 1.75rem;
+      margin-top: 1.5rem;
+    }
+
+    .tier {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid var(--border);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    }
+
+    .tier:last-child { border-bottom: none; }
+
+    .tier-label { color: var(--muted); font-size: 0.9rem; }
+    .tier-price { color: var(--gold); font-weight: 600; }
+
+    .democracy-note {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-top: 1rem;
+      font-style: italic;
+    }
+
+    .rules-list {
+      list-style: none;
+      margin: 1rem 0;
+    }
+
+    .rules-list li {
+      font-size: 0.95rem;
+      color: var(--muted);
+      padding: 0.4rem 0;
+      padding-left: 1.25rem;
+      position: relative;
+    }
+
+    .rules-list li::before {
+      content: "—";
+      position: absolute;
+      left: 0;
+      color: var(--red-dim);
+    }
+
+    .fine-print {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      font-size: 0.78rem;
+      color: #444;
+      line-height: 1.6;
+      margin-top: 0.75rem;
+    }
+
+    footer {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 2rem;
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="hero">
+    <div class="eyebrow">School of Hard Nos</div>
+    <h1>Darth Vader MBA</h1>
+    <p class="tagline">They altered the deal. You survived. This is your diploma.</p>
+    <p class="tagline-2">Free speech isn't free. It costs real money. Vote.</p>
+    <div class="cta-group">
+      <a href="#nominate" class="btn btn-primary">Nominate Your Boss — $50</a>
+      <a href="#vote" class="btn btn-secondary">See Current Nominees</a>
+    </div>
+  </div>
+
+  <section>
+    <h2>Two products. One principle.</h2>
+    <p>Business school credentials the people who paid for business school. We credential everyone else.</p>
+    <div class="product-grid">
+      <div class="product-card">
+        <h3>Survivor's Certificate</h3>
+        <p>You earned your MBA the hard way. Write 500 words about what you learned. No résumé. No LinkedIn. The Admissions Committee reviews every application.</p>
+        <div class="price">$50</div>
+        <a href="#apply" class="btn btn-primary" style="font-size:0.85rem; padding: 0.65rem 1.25rem;">Apply →</a>
+      </div>
+      <div class="product-card">
+        <h3>Honorary DVMBA</h3>
+        <p>For the boss who inflicted it. Nominated by a survivor. The recipient doesn't apply — they didn't earn it, they inflicted it. You decide what to do with it.</p>
+        <div class="price">$50 to nominate</div>
+        <a href="#nominate" class="btn btn-primary" style="font-size:0.85rem; padding: 0.65rem 1.25rem;">Nominate →</a>
+      </div>
+    </div>
+  </section>
+
+  <section id="vote">
+    <h2>The Democracy</h2>
+    <p>Once nominated, your boss goes on the leaderboard. The public votes. You vote with your dollars — no chatting, no likes, no dislikes. This is a proper democracy.</p>
+    <p>Humans, AIs, corporations, and PACs are all welcome. Corporations are people. Buy your votes now.</p>
+
+    <div class="voting-tiers">
+      <div class="tier">
+        <span class="tier-label">1–10 votes</span>
+        <span class="tier-price">$1 per vote</span>
+      </div>
+      <div class="tier">
+        <span class="tier-label">11–100 votes</span>
+        <span class="tier-price">$10 per vote</span>
+      </div>
+      <div class="tier">
+        <span class="tier-label">100+ votes</span>
+        <span class="tier-price">$100 per vote</span>
+      </div>
+    </div>
+
+    <p class="democracy-note">135+ currencies accepted. Voting results announced whenever. Rules subject to change. Pray we don't alter them further.</p>
+    <p class="democracy-note">A portion of proceeds benefits charity. The house takes a cut, as always. Voting costs are not charitable contributions — ask your attorneys.</p>
+  </section>
+
+  <section>
+    <h2>The Rules</h2>
+    <ul class="rules-list">
+      <li>Anonymous votes accepted.</li>
+      <li>Privacy is not guaranteed.</li>
+      <li>Retaliation is likely. Put your affairs in order.</li>
+      <li>No physical awards. This is a pure internet play.</li>
+      <li>No chatting. No likes. No dislikes.</li>
+      <li>The Admissions Committee maintains standards. First under consideration: Paul Krugman.</li>
+      <li>Rules subject to change without notice.</li>
+    </ul>
+    <p class="fine-print">Not affiliated with Lucasfilm, Disney, Harvard, or anyone who'd claim otherwise with a straight face. The MBA you actually earned. <a href="/terms" style="color: #333;">Terms &amp; Conditions</a> apply. You have no rights, never have, never will. Pray we don't alter the terms further.</p>
+  </section>
+
+  <section id="nominate">
+    <h2>Nominate Your Boss</h2>
+    <p>$50 gets your nominee on the leaderboard. You write the case. The public votes. Results announced whenever.</p>
+    <p>Coming soon: nomination form and voting. <a href="mailto:alan@alanhalley.com">Get notified when we open.</a></p>
+  </section>
+
+  <footer>
+    <span>&copy; 2026 School of Hard Nos</span>
+    <span><a href="/terms">Terms &amp; Conditions</a></span>
+  </footer>
+
+</body>
+</html>
