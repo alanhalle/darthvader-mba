@@ -6,6 +6,7 @@
   <title>Darth Vader MBA</title>
   <link rel="canonical" href="https://darthvader.mba/" />
   <meta name="description" content="Nominate your boss for the honorary degree they earned by being terrible. Free speech isn't free. It costs real money. Vote." />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -15,13 +16,13 @@
       --red: #e05a4d;
       --red-dim: #8b2020;
       --text: #f3eee2;
-      --muted: #c2bbac;
+      --muted: #cdc6b8;
       --border: #303030;
       --gold: #e6c13f;
     }
 
     body {
-      font-family: Georgia, "Times New Roman", serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
       background: var(--bg);
       color: var(--text);
       line-height: 1.75;
@@ -56,8 +57,9 @@
     }
 
     .tagline {
-      font-size: 1.2rem;
-      color: var(--muted);
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 1.25rem;
+      color: var(--text);
       font-style: italic;
       margin-bottom: 0.75rem;
       max-width: 580px;
@@ -99,12 +101,12 @@
     .btn-primary:hover { background: var(--red-dim); text-decoration: none; }
 
     .btn-secondary {
-      background: transparent;
-      color: var(--muted);
-      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--muted);
     }
 
-    .btn-secondary:hover { color: var(--text); border-color: var(--muted); text-decoration: none; }
+    .btn-secondary:hover { background: #2e2e2e; border-color: var(--gold); color: var(--gold); text-decoration: none; }
 
     section {
       max-width: 760px;
@@ -223,8 +225,8 @@
 
     .fine-print {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-      font-size: 0.78rem;
-      color: #777;
+      font-size: 0.82rem;
+      color: #a39c8f;
       line-height: 1.6;
       margin-top: 0.75rem;
     }
@@ -262,7 +264,9 @@
     <p>Tesla sold you software upgrades — acceleration boost, enhanced autopilot — for thousands of dollars. Sell the car and those features disappear. The next owner gets a different car than the one you sold them. Tesla calls this a feature.</p>
     <p>John Deere sells you a tractor you cannot fix. The software is locked. The diagnostic tools belong to them. Farmers who bought their equipment are now renting the right to use it.</p>
     <p>HP issued a "security update" that detected third-party ink cartridges and refused to print. The update was not about security. It was about ink.</p>
-    <p>They all graduated from the same program. The credential isn't on their wall — it's in the deal they made with you, and then unmade.</p>
+    <p>Five companies. Five industries. One identical move: sell you something, then reach back through the wires and quietly take part of it back.</p>
+    <p style="color: var(--gold); font-weight: 600;">That is not a coincidence. That is a curriculum.</p>
+    <p>They all graduated from the same program — the <strong>Darth Vader MBA</strong>. The only degree conferred <em>after</em> commencement, awarded the instant an executive alters a deal his customer already signed. The diploma isn't on the wall. It's in the contract they made with you, and then unmade. Pray they don't alter it further.</p>
     <p style="font-size: 0.9rem; color: var(--muted); margin-top: 1.5rem;">The phrase was coined by Cory Doctorow, who has been cataloging graduates for years at <a href="https://pluralistic.net" style="color: var(--muted);">Pluralistic</a>.</p>
   </section>
 

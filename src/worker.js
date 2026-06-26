@@ -1,10 +1,11 @@
 const CSS = `
   *{margin:0;padding:0;box-sizing:border-box}
-  :root{--bg:#1a1a1a;--surface:#242424;--text:#f3eee2;--muted:#c2bbac;--red:#e05a4d;--red-dim:#8b2020;--gold:#e6c13f;--green:#2ee06f;--green-dim:#1e8449;--border:#303030}
+  :root{--bg:#1a1a1a;--surface:#242424;--text:#f3eee2;--muted:#cdc6b8;--red:#e05a4d;--red-dim:#8b2020;--gold:#e6c13f;--green:#2ee06f;--green-dim:#1e8449;--border:#303030}
   body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);line-height:1.6}
   a{color:var(--red);text-decoration:none}
   nav{max-width:860px;margin:0 auto;padding:1.25rem 2rem;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border)}
-  .nav-logo{font-family:Georgia,serif;font-size:1rem;color:var(--muted)}
+  .nav-logo{font-family:Georgia,serif;font-size:1rem;color:var(--muted);text-decoration:none}
+  a.nav-logo:hover{color:var(--text)}
   .nav-logo span{color:var(--text)}
   .nav-cta{font-size:.82rem;font-weight:600;color:var(--red)}
   .ticker-wrap{max-width:860px;margin:0 auto;background:#111;border-bottom:1px solid var(--border);overflow:hidden;padding:.55rem 2rem}
@@ -94,6 +95,7 @@ function pageShell({ title, nav, ticker = '', body }) {
   return `<!doctype html><html lang="en"><head>
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
   <title>${title}</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <style>${CSS}</style>
 </head><body>
   ${nav}
@@ -148,7 +150,7 @@ async function handleLeaderboard(request, env) {
   }).join('');
 
   const nav = `<nav>
-    <div class="nav-logo"><span>Darth Vader MBA</span> · darthvader.mba</div>
+    <a href="/" class="nav-logo"><span>Darth Vader MBA</span> · darthvader.mba</a>
     <a class="nav-cta" href="/nominate">Nominate a Company →</a>
   </nav>`;
 
@@ -190,7 +192,7 @@ async function handleVotePage(request, env) {
     : null;
 
   if (!nominee) {
-    const nav = `<nav><div class="nav-logo"><span>Darth Vader MBA</span></div></nav>`;
+    const nav = `<nav><a href="/" class="nav-logo"><span>Darth Vader MBA</span></a></nav>`;
     const body = `<div class="error-page">
       <h1>Nominee not found</h1>
       <p style="color:var(--muted);margin-bottom:1.5rem">That nominee doesn't exist.</p>
@@ -213,7 +215,7 @@ async function handleVotePage(request, env) {
   }).join('');
 
   const nav = `<nav>
-    <div class="nav-logo"><span>Darth Vader MBA</span></div>
+    <a href="/" class="nav-logo"><span>Darth Vader MBA</span></a>
     <a href="/leaderboard" style="font-size:.82rem;color:var(--muted)">← Leaderboard</a>
   </nav>`;
 
@@ -362,7 +364,7 @@ async function handleCheckout(request, env) {
 
 async function handleNominatePage(request, env) {
   const nav = `<nav>
-    <div class="nav-logo"><span>Darth Vader MBA</span></div>
+    <a href="/" class="nav-logo"><span>Darth Vader MBA</span></a>
     <a href="/leaderboard" style="font-size:.82rem;color:var(--muted)">← Leaderboard</a>
   </nav>`;
 
@@ -500,7 +502,7 @@ async function handleCheckoutNominate(request, env) {
 
 async function handleNominatedPage() {
   const nav = `<nav>
-    <div class="nav-logo"><span>Darth Vader MBA</span></div>
+    <a href="/" class="nav-logo"><span>Darth Vader MBA</span></a>
     <a href="/leaderboard" style="font-size:.82rem;color:var(--muted)">← Leaderboard</a>
   </nav>`;
 
