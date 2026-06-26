@@ -7,7 +7,7 @@ const CSS = `
   .nav-logo{font-family:Georgia,serif;font-size:1rem;color:var(--muted)}
   .nav-logo span{color:var(--text)}
   .nav-cta{font-size:.82rem;font-weight:600;color:var(--red)}
-  .ticker-wrap{background:#111;border-bottom:1px solid var(--border);overflow:hidden;padding:.55rem 0}
+  .ticker-wrap{max-width:860px;margin:0 auto;background:#111;border-bottom:1px solid var(--border);overflow:hidden;padding:.55rem 2rem}
   .ticker-inner{display:flex;gap:3rem;animation:ticker 30s linear infinite;white-space:nowrap;width:max-content}
   .ticker-inner span{font-size:.78rem;color:var(--muted)}
   .ticker-inner em{font-style:normal;color:var(--text)}
