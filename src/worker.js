@@ -1,6 +1,6 @@
 const CSS = `
   *{margin:0;padding:0;box-sizing:border-box}
-  :root{--bg:#1a1a1a;--surface:#242424;--text:#ddd5c4;--muted:#9a9488;--red:#c0392b;--red-dim:#8b2020;--gold:#c9a227;--green:#27ae60;--green-dim:#1e8449;--border:#303030}
+  :root{--bg:#1a1a1a;--surface:#242424;--text:#f3eee2;--muted:#c2bbac;--red:#e05a4d;--red-dim:#8b2020;--gold:#e6c13f;--green:#2ee06f;--green-dim:#1e8449;--border:#303030}
   body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);line-height:1.6}
   a{color:var(--red);text-decoration:none}
   nav{max-width:860px;margin:0 auto;padding:1.25rem 2rem;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border)}
