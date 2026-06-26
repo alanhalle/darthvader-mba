@@ -317,13 +317,19 @@ async function handleCheckout(request, env) {
 
   const bodyParts = [
     `line_items[0][price_data][currency]=usd`,
-    `line_items[0][price_data][product_data][name]=Votes`,
+    `line_items[0][price_data][product_data][name]=${e(`${pack} votes for ${nominee.name} — Darth Vader MBA`)}`,
     `line_items[0][price_data][unit_amount]=${priceCents}`,
     `line_items[0][quantity]=1`,
     `mode=payment`,
+    `automatic_payment_methods[enabled]=true`,
     `success_url=${e(`${origin}/leaderboard`)}`,
-    `cancel_url=${e(`${origin}/leaderboard`)}`,
+    `cancel_url=${e(`${origin}/vote?nominee=${e(nomineeSlug)}&pack=${pack}`)}`,
+    `metadata[nominee_slug]=${e(nomineeSlug)}`,
+    `metadata[pack_size]=${pack}`,
+    `metadata[price_cents]=${priceCents}`,
   ];
+  if (displayName) bodyParts.push(`metadata[display_name]=${e(displayName)}`);
+  if (displayCity) bodyParts.push(`metadata[display_city]=${e(displayCity)}`);
 
   const stripeRes = await fetch('https://api.stripe.com/v1/checkout/sessions', {
     method: 'POST',
