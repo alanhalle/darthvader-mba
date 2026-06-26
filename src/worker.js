@@ -79,6 +79,21 @@ function escapeHtml(str) {
     .replace(/"/g, '&quot;');
 }
 
+async function uniqueNomineeSlug(env, name) {
+  const baseSlug = name.toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 60);
+  let slug = baseSlug || 'nominee';
+  let suffix = 2;
+  while (true) {
+    const existing = await env.DB.prepare('SELECT id FROM nominees WHERE slug = ?').bind(slug).first();
+    if (!existing) break;
+    slug = `${baseSlug}-${suffix++}`;
+  }
+  return slug;
+}
+
 function tickerHtml(recent) {
   const items = recent.length > 0
     ? recent.map(v => {
@@ -558,29 +573,11 @@ async function handleStripeWebhook(request, env) {
       const nominatorName = meta.nominator_name || null;
 
       if (companyName && citation) {
-        // Generate a unique slug
-        const baseSlug = companyName.toLowerCase()
-          .replace(/[^a-z0-9]+/g, '-')
-          .replace(/^-+|-+$/g, '')
-          .slice(0, 60);
-
-        let slug = baseSlug;
-        let suffix = 2;
-        while (true) {
-          const existing = await env.DB.prepare('SELECT id FROM nominees WHERE slug = ?').bind(slug).first();
-          if (!existing) break;
-          slug = `${baseSlug}-${suffix++}`;
-        }
-
-        await env.DB.batch([
-          env.DB.prepare(
-            'INSERT INTO nominees (slug, name, citation) VALUES (?, ?, ?)'
-          ).bind(slug, companyName, citation),
-          env.DB.prepare(
-            'INSERT INTO nominations (company_name, citation, nominator_name, stripe_session_id, status) VALUES (?, ?, ?, ?, ?)'
-          ).bind(companyName, citation, nominatorName, session.id, 'approved'),
-        ]);
-        console.log(`webhook: nomination recorded for ${companyName} (${slug})`);
+        // Hold for manual review — does NOT hit the leaderboard until approved in /admin
+        await env.DB.prepare(
+          'INSERT INTO nominations (company_name, citation, nominator_name, stripe_session_id, status) VALUES (?, ?, ?, ?, ?)'
+        ).bind(companyName, citation, nominatorName, session.id, 'pending').run();
+        console.log(`webhook: nomination received for ${companyName} (pending review)`);
       }
     } else {
       const nomineeSlug = meta.nominee_slug;
@@ -638,9 +635,93 @@ async function verifyStripeSignature(payload, sigHeader, secret) {
   return computed === signature;
 }
 
+function adminUnauthorized() {
+  return new Response('Unauthorized — append ?key=YOUR_ADMIN_KEY to the URL.', {
+    status: 401, headers: { 'Content-Type': 'text/plain' }
+  });
+}
+
+async function handleAdminPage(request, env) {
+  const url = new URL(request.url);
+  const key = url.searchParams.get('key') || '';
+  if (!env.ADMIN_KEY || key !== env.ADMIN_KEY) return adminUnauthorized();
+
+  const pending = await env.DB.prepare(
+    "SELECT id, company_name, citation, nominator_name, created_at FROM nominations WHERE status = 'pending' ORDER BY created_at ASC"
+  ).all();
+
+  const rows = pending.results.map(n => `
+    <div class="nominee-card">
+      <div class="nominee-body">
+        <div class="nominee-name">${escapeHtml(n.company_name)}</div>
+        <div class="nominee-citation">"${escapeHtml(n.citation)}"</div>
+        <div class="vote-label">${n.nominator_name ? 'by ' + escapeHtml(n.nominator_name) + ' · ' : ''}${escapeHtml(n.created_at || '')}</div>
+      </div>
+      <div class="nominee-right">
+        <form method="POST" action="/admin/action" style="display:flex;gap:.5rem">
+          <input type="hidden" name="key" value="${escapeHtml(key)}">
+          <input type="hidden" name="id" value="${n.id}">
+          <button type="submit" class="btn-vote-pack" name="action" value="approve">Approve</button>
+          <button type="submit" class="btn-vote-pack" name="action" value="reject" style="color:var(--red);border-color:var(--red-dim)">Reject</button>
+        </form>
+      </div>
+    </div>`).join('');
+
+  const nav = `<nav>
+    <a href="/" class="nav-logo"><span>Darth Vader MBA</span> · admin</a>
+    <a href="/leaderboard" style="font-size:.82rem;color:var(--muted)">Leaderboard →</a>
+  </nav>`;
+
+  const body = `<main>
+    <div class="page-header"><h1>Pending Nominations</h1></div>
+    <p class="page-sub">${pending.results.length} awaiting review. Approve to publish to the leaderboard; reject to discard.</p>
+    <div class="nominee-list">${rows || '<p style="color:var(--muted)">Nothing pending. The board is clean.</p>'}</div>
+  </main>`;
+
+  return new Response(pageShell({ title: 'Admin — Darth Vader MBA', nav, body }), {
+    headers: { 'Content-Type': 'text/html;charset=utf-8', 'X-Robots-Tag': 'noindex' }
+  });
+}
+
+async function handleAdminAction(request, env) {
+  const form = await request.formData();
+  const key = form.get('key') || '';
+  if (!env.ADMIN_KEY || key !== env.ADMIN_KEY) return adminUnauthorized();
+
+  const id = parseInt(form.get('id') || '0');
+  const action = form.get('action') || '';
+  if (!id) return new Response('Bad request', { status: 400 });
+
+  const nom = await env.DB.prepare(
+    'SELECT id, company_name, citation, status FROM nominations WHERE id = ?'
+  ).bind(id).first();
+
+  if (nom && nom.status === 'pending' && action === 'approve') {
+    const slug = await uniqueNomineeSlug(env, nom.company_name);
+    await env.DB.batch([
+      env.DB.prepare('INSERT INTO nominees (slug, name, citation) VALUES (?, ?, ?)').bind(slug, nom.company_name, nom.citation),
+      env.DB.prepare("UPDATE nominations SET status = 'approved' WHERE id = ?").bind(id),
+    ]);
+    console.log(`admin: approved nomination ${id} -> ${slug}`);
+  } else if (nom && nom.status === 'pending' && action === 'reject') {
+    await env.DB.prepare("UPDATE nominations SET status = 'rejected' WHERE id = ?").bind(id).run();
+    console.log(`admin: rejected nomination ${id}`);
+  }
+
+  return new Response(null, { status: 303, headers: { Location: `/admin?key=${encodeURIComponent(key)}` } });
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+
+    if (url.pathname === '/admin') {
+      return handleAdminPage(request, env);
+    }
+
+    if (url.pathname === '/admin/action' && request.method === 'POST') {
+      return handleAdminAction(request, env);
+    }
 
     if (url.pathname === '/leaderboard' || url.pathname === '/leaderboard/') {
       return handleLeaderboard(request, env);
