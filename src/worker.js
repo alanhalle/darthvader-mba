@@ -22,7 +22,7 @@ const CSS = `
   .nominee-list{display:flex;flex-direction:column;gap:1rem}
   .nominee-card{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1.4rem 1.75rem;display:grid;grid-template-columns:2.5rem 1fr auto;gap:0 1.25rem;align-items:start}
   .nominee-card.rank-1{border-color:#4a3a10;background:#1f1d18}
-  .rank{font-size:1.5rem;font-weight:700;color:var(--border);padding-top:.15rem}
+  .rank{font-size:1.5rem;font-weight:700;color:#7a7264;padding-top:.15rem}
   .rank-1 .rank{color:var(--gold)}
   .nominee-name{font-family:Georgia,serif;font-size:1.35rem;color:var(--text);margin-bottom:.3rem}
   .nominee-citation{font-size:.85rem;color:var(--muted);line-height:1.5;margin-bottom:.85rem;max-width:520px}
@@ -527,13 +527,30 @@ async function handleStripeWebhook(request, env) {
     }
   }
 
-  const event = JSON.parse(body);
+  let event;
+  try {
+    event = JSON.parse(body);
+  } catch {
+    console.error('webhook: invalid JSON body');
+    return new Response('Invalid payload', { status: 400 });
+  }
 
-  if (event.type === 'checkout.session.completed') {
-    const session = event.data.object;
-    const meta = session.metadata || {};
+  if (event.type !== 'checkout.session.completed') {
+    return new Response('ok', { status: 200 });
+  }
 
+  const session = event.data.object;
+  const meta = session.metadata || {};
+
+  try {
     if (meta.type === 'nomination') {
+      // Idempotency: Stripe retries deliveries, so skip if already recorded
+      const already = await env.DB.prepare('SELECT id FROM nominations WHERE stripe_session_id = ?').bind(session.id).first();
+      if (already) {
+        console.log(`webhook: nomination ${session.id} already processed, skipping`);
+        return new Response('ok', { status: 200 });
+      }
+
       const companyName = meta.company_name;
       const citation = meta.citation;
       const nominatorName = meta.nominator_name || null;
@@ -561,6 +578,7 @@ async function handleStripeWebhook(request, env) {
             'INSERT INTO nominations (company_name, citation, nominator_name, stripe_session_id, status) VALUES (?, ?, ?, ?, ?)'
           ).bind(companyName, citation, nominatorName, session.id, 'approved'),
         ]);
+        console.log(`webhook: nomination recorded for ${companyName} (${slug})`);
       }
     } else {
       const nomineeSlug = meta.nominee_slug;
@@ -570,15 +588,29 @@ async function handleStripeWebhook(request, env) {
       const displayCity = meta.display_city || null;
 
       if (nomineeSlug && pack > 0) {
-        await env.DB.prepare(
-          'INSERT INTO votes (nominee_slug, pack_size, price_cents, display_name, display_city, stripe_session_id) VALUES (?, ?, ?, ?, ?, ?)'
-        ).bind(nomineeSlug, pack, priceCents, displayName, displayCity, session.id).run();
+        // Idempotency: Stripe retries deliveries, so skip if this payment was already recorded
+        const already = await env.DB.prepare('SELECT id FROM votes WHERE stripe_session_id = ?').bind(session.id).first();
+        if (already) {
+          console.log(`webhook: vote ${session.id} already processed, skipping`);
+          return new Response('ok', { status: 200 });
+        }
 
-        await env.DB.prepare(
-          'UPDATE nominees SET total_votes = total_votes + ? WHERE slug = ?'
-        ).bind(pack, nomineeSlug).run();
+        // Insert + tally atomically so they can't drift apart
+        await env.DB.batch([
+          env.DB.prepare(
+            'INSERT INTO votes (nominee_slug, pack_size, price_cents, display_name, display_city, stripe_session_id) VALUES (?, ?, ?, ?, ?, ?)'
+          ).bind(nomineeSlug, pack, priceCents, displayName, displayCity, session.id),
+          env.DB.prepare(
+            'UPDATE nominees SET total_votes = total_votes + ? WHERE slug = ?'
+          ).bind(pack, nomineeSlug),
+        ]);
+        console.log(`webhook: ${pack} votes recorded for ${nomineeSlug} (${session.id})`);
       }
     }
+  } catch (err) {
+    // Return 500 so Stripe retries; the idempotency guards above prevent double-counting
+    console.error(`webhook: error processing ${session.id}: ${err.message}`);
+    return new Response('Processing error', { status: 500 });
   }
 
   return new Response('ok', { status: 200 });
