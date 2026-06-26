@@ -1,0 +1,17 @@
+name = "darthvader-mba"
+main = "src/worker.js"
+compatibility_date = "2024-09-23"
+account_id = "a53a99bc59e64d3d2dec98729628aa72"
+
+[assets]
+directory = "./public"
+binding = "ASSETS"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "dvmba"
+database_id = "90676e15-8820-434a-86ce-825c6894b05b"
+
+# Set secrets before deploying:
+#   wrangler secret put STRIPE_SECRET_KEY     ← Stripe secret key (sk_live_...)
+#   wrangler secret put STRIPE_WEBHOOK_SECRET ← from Stripe webhook dashboard
