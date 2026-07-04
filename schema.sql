@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS votes (
   display_name TEXT,
   display_city TEXT,
   stripe_session_id TEXT,
+  is_ai INTEGER DEFAULT 0,
   created_at TEXT DEFAULT (datetime('now'))
 );
 
@@ -25,6 +26,7 @@ CREATE TABLE IF NOT EXISTS nominations (
   nominator_name TEXT,
   stripe_session_id TEXT,
   status TEXT DEFAULT 'approved',
+  is_ai INTEGER DEFAULT 0,
   created_at TEXT DEFAULT (datetime('now'))
 );
 

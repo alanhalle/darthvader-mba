@@ -69,6 +69,9 @@ const CSS = `
   .fee-box p{font-size:.85rem;color:var(--muted);line-height:1.6}
   .fee-box strong{color:var(--text)}
   .char-count{font-size:.72rem;color:var(--muted);text-align:right;margin-top:.3rem}
+  .ai-field{display:flex;align-items:center;gap:.6rem}
+  .ai-field input[type=checkbox]{width:1.1rem;height:1.1rem;flex-shrink:0}
+  .ai-field label{text-transform:none;font-weight:400;letter-spacing:0;margin:0;font-size:.85rem;color:var(--muted)}
 `;
 
 function escapeHtml(str) {
@@ -97,7 +100,8 @@ async function uniqueNomineeSlug(env, name) {
 function tickerHtml(recent) {
   const items = recent.length > 0
     ? recent.map(v => {
-        const name = v.display_name ? `<em>${escapeHtml(v.display_name)}${v.display_city ? ' in ' + escapeHtml(v.display_city) : ''}</em>` : '<em>Anon</em>';
+        const who = v.display_name ? `${escapeHtml(v.display_name)}${v.display_city ? ' in ' + escapeHtml(v.display_city) : ''}` : 'Anon';
+        const name = `<em>${who}${v.is_ai ? ' (AI agent)' : ''}</em>`;
         return `<span>${name} just cast <em>${v.pack_size} votes</em> for <em>${escapeHtml(v.nominee_name)}</em></span><span>·</span>`;
       }).join('')
     : '<span>The polls are open. Be the first to vote.</span><span>·</span>';
@@ -126,7 +130,7 @@ async function handleLeaderboard(request, env) {
   ).all();
 
   const recent = await env.DB.prepare(`
-    SELECT v.pack_size, v.display_name, v.display_city, n.name as nominee_name
+    SELECT v.pack_size, v.display_name, v.display_city, v.is_ai, n.name as nominee_name
     FROM votes v JOIN nominees n ON v.nominee_slug = n.slug
     ORDER BY v.created_at DESC LIMIT 10
   `).all();
@@ -263,6 +267,11 @@ async function handleVotePage(request, env) {
         <p class="optional-note">Leave blank to appear as Anon in the ticker.</p>
       </div>
 
+      <div class="field ai-field">
+        <input type="checkbox" name="is_ai" id="is_ai" value="1">
+        <label for="is_ai">This vote is cast by an AI agent, on behalf of a human payer.</label>
+      </div>
+
       <button type="submit" class="btn-submit">Pay &amp; Vote →</button>
     </form>
 
@@ -313,6 +322,7 @@ async function handleCheckout(request, env) {
   const pack = parseInt(formData.get('pack') || '0');
   const displayName = (formData.get('display_name') || '').trim().slice(0, 40);
   const displayCity = (formData.get('display_city') || '').trim().slice(0, 40);
+  const isAi = formData.get('is_ai') === '1' ? '1' : '0';
 
   const validPacks = [5, 25, 100];
   if (!nomineeSlug || !validPacks.includes(pack)) {
@@ -343,6 +353,7 @@ async function handleCheckout(request, env) {
     `metadata[nominee_slug]=${e(nomineeSlug)}`,
     `metadata[pack_size]=${pack}`,
     `metadata[price_cents]=${priceCents}`,
+    `metadata[is_ai]=${isAi}`,
   ];
   if (displayName) bodyParts.push(`metadata[display_name]=${e(displayName)}`);
   if (displayCity) bodyParts.push(`metadata[display_city]=${e(displayCity)}`);
@@ -408,6 +419,11 @@ async function handleNominatePage(request, env) {
         <input type="text" name="nominator_name" placeholder="Kim in Oklahoma City" maxlength="60">
       </div>
 
+      <div class="field ai-field">
+        <input type="checkbox" name="is_ai" id="is_ai" value="1">
+        <label for="is_ai">This nomination is submitted by an AI agent, on behalf of a human payer.</label>
+      </div>
+
       <button type="submit" class="btn-submit" style="background:var(--red)">Nominate — $20 →</button>
     </form>
 
@@ -461,6 +477,7 @@ async function handleCheckoutNominate(request, env) {
   const companyName = (formData.get('company_name') || '').trim().slice(0, 80);
   const citation = (formData.get('citation') || '').trim().slice(0, 400);
   const nominatorName = (formData.get('nominator_name') || '').trim().slice(0, 60);
+  const isAi = formData.get('is_ai') === '1' ? '1' : '0';
 
   if (!companyName || !citation) {
     return new Response(JSON.stringify({ error: 'Company name and citation are required' }), {
@@ -482,6 +499,7 @@ async function handleCheckoutNominate(request, env) {
     `metadata[type]=nomination`,
     `metadata[company_name]=${e(companyName)}`,
     `metadata[citation]=${e(citation)}`,
+    `metadata[is_ai]=${isAi}`,
   ];
   if (nominatorName) bodyParts.push(`metadata[nominator_name]=${e(nominatorName)}`);
 
@@ -571,12 +589,13 @@ async function handleStripeWebhook(request, env) {
       const companyName = meta.company_name;
       const citation = meta.citation;
       const nominatorName = meta.nominator_name || null;
+      const isAi = meta.is_ai === '1' ? 1 : 0;
 
       if (companyName && citation) {
         // Hold for manual review — does NOT hit the leaderboard until approved in /admin
         await env.DB.prepare(
-          'INSERT INTO nominations (company_name, citation, nominator_name, stripe_session_id, status) VALUES (?, ?, ?, ?, ?)'
-        ).bind(companyName, citation, nominatorName, session.id, 'pending').run();
+          'INSERT INTO nominations (company_name, citation, nominator_name, stripe_session_id, status, is_ai) VALUES (?, ?, ?, ?, ?, ?)'
+        ).bind(companyName, citation, nominatorName, session.id, 'pending', isAi).run();
         console.log(`webhook: nomination received for ${companyName} (pending review)`);
       }
     } else {
@@ -585,6 +604,7 @@ async function handleStripeWebhook(request, env) {
       const priceCents = parseInt(meta.price_cents || '0');
       const displayName = meta.display_name || null;
       const displayCity = meta.display_city || null;
+      const isAi = meta.is_ai === '1' ? 1 : 0;
 
       if (nomineeSlug && pack > 0) {
         // Idempotency: Stripe retries deliveries, so skip if this payment was already recorded
@@ -597,8 +617,8 @@ async function handleStripeWebhook(request, env) {
         // Insert + tally atomically so they can't drift apart
         await env.DB.batch([
           env.DB.prepare(
-            'INSERT INTO votes (nominee_slug, pack_size, price_cents, display_name, display_city, stripe_session_id) VALUES (?, ?, ?, ?, ?, ?)'
-          ).bind(nomineeSlug, pack, priceCents, displayName, displayCity, session.id),
+            'INSERT INTO votes (nominee_slug, pack_size, price_cents, display_name, display_city, stripe_session_id, is_ai) VALUES (?, ?, ?, ?, ?, ?, ?)'
+          ).bind(nomineeSlug, pack, priceCents, displayName, displayCity, session.id, isAi),
           env.DB.prepare(
             'UPDATE nominees SET total_votes = total_votes + ? WHERE slug = ?'
           ).bind(pack, nomineeSlug),
@@ -647,13 +667,13 @@ async function handleAdminPage(request, env) {
   if (!env.ADMIN_KEY || key !== env.ADMIN_KEY) return adminUnauthorized();
 
   const pending = await env.DB.prepare(
-    "SELECT id, company_name, citation, nominator_name, created_at FROM nominations WHERE status = 'pending' ORDER BY created_at ASC"
+    "SELECT id, company_name, citation, nominator_name, is_ai, created_at FROM nominations WHERE status = 'pending' ORDER BY created_at ASC"
   ).all();
 
   const rows = pending.results.map(n => `
     <div class="nominee-card">
       <div class="nominee-body">
-        <div class="nominee-name">${escapeHtml(n.company_name)}</div>
+        <div class="nominee-name">${escapeHtml(n.company_name)}${n.is_ai ? '<span class="new-badge" style="background:var(--muted);color:#1a1a1a">AI agent</span>' : ''}</div>
         <div class="nominee-citation">"${escapeHtml(n.citation)}"</div>
         <div class="vote-label">${n.nominator_name ? 'by ' + escapeHtml(n.nominator_name) + ' · ' : ''}${escapeHtml(n.created_at || '')}</div>
       </div>

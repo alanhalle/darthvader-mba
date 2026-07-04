@@ -160,7 +160,7 @@
     }
 
     .product-card p {
-      font-size: 0.95rem;
+      font-size: 1rem;
       color: var(--muted);
       margin-bottom: 1rem;
     }
@@ -192,12 +192,12 @@
 
     .tier:last-child { border-bottom: none; }
 
-    .tier-label { color: var(--muted); font-size: 0.9rem; }
+    .tier-label { color: var(--muted); font-size: 0.98rem; }
     .tier-price { color: var(--gold); font-weight: 600; }
 
     .democracy-note {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-      font-size: 0.85rem;
+      font-size: 0.95rem;
       color: var(--muted);
       margin-top: 1rem;
       font-style: italic;
@@ -220,13 +220,13 @@
       content: "—";
       position: absolute;
       left: 0;
-      color: var(--red-dim);
+      color: var(--red);
     }
 
     .fine-print {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-      font-size: 0.82rem;
-      color: #a39c8f;
+      font-size: 0.92rem;
+      color: var(--muted);
       line-height: 1.6;
       margin-top: 0.75rem;
     }
@@ -240,7 +240,7 @@
       flex-wrap: wrap;
       gap: 0.75rem;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-      font-size: 0.82rem;
+      font-size: 0.92rem;
       color: var(--muted);
     }
   </style>
@@ -273,6 +273,7 @@
   <section id="vote">
     <h2>The Democracy</h2>
     <p>Once nominated, the company goes on the leaderboard. The public votes. You vote with your dollars — no chatting, no likes, no dislikes. This is a proper democracy.</p>
+    <p style="font-weight: 600;">Two paid steps: $20 to nominate, then pay-per-vote once they're on the board.</p>
     <p>Humans, AIs, corporations, and PACs are all welcome. Corporations are people. Buy your votes now.</p>
 
     <div class="voting-tiers">
@@ -290,8 +291,8 @@
       </div>
     </div>
 
-    <p class="democracy-note">135+ currencies accepted. Voting results announced whenever. Rules subject to change. Pray we don't alter them further.</p>
-    <p class="democracy-note">A portion of nomination proceeds goes to the <a href="https://www.eff.org" style="color: var(--muted);">Electronic Frontier Foundation</a> — the people actually fighting the behavior being honored here. The house takes a cut, as always. Voting costs are not charitable contributions — ask your attorneys.</p>
+    <p class="democracy-note">135+ currencies accepted. Voting results announced whenever. Rules subject to change at any time without notice.</p>
+    <p class="democracy-note">Fifty percent of nomination and voting proceeds goes to the <a href="https://www.eff.org" style="color: var(--muted);">Electronic Frontier Foundation</a> — the people actually fighting the behavior being honored here. The house takes a cut of the rest, as always. Voting costs are not charitable contributions — ask your attorneys.</p>
     <div class="cta-group" style="margin-top: 1.5rem;">
       <a href="/leaderboard" class="btn btn-secondary">See the Leaderboard</a>
     </div>
@@ -300,14 +301,14 @@
   <section>
     <h2>The Rules</h2>
     <ul class="rules-list">
-      <li>Companies, executives, and institutions only. No private individuals.</li>
+      <li>Nominees are companies, executives, and institutions only. No private individuals.</li>
       <li>Anonymous nominations and votes accepted.</li>
       <li>Privacy is not guaranteed.</li>
       <li>No physical awards. This is a pure internet play.</li>
       <li>No chatting. No likes. No dislikes.</li>
       <li>Rules subject to change without notice.</li>
     </ul>
-    <p class="fine-print">Not affiliated with Lucasfilm, Disney, Harvard, or anyone who'd claim otherwise with a straight face. Satire. <a href="/terms" style="color: #666;">Terms &amp; Conditions</a> apply. You have no rights, never have, never will.</p>
+    <p class="fine-print">Not affiliated with Lucasfilm, Disney, Harvard, or anyone who'd claim otherwise with a straight face. Satire. <a href="/terms">Terms &amp; Conditions</a> apply. You have no rights, never have, never will.</p>
   </section>
 
   <section id="nominate">
