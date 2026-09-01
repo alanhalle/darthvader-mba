@@ -12,6 +12,12 @@ binding = "DB"
 database_name = "dvmba"
 database_id = "90676e15-8820-434a-86ce-825c6894b05b"
 
+# Nomination-alert email. Requires Cloudflare Email Routing enabled on darthvader.mba
+# with alanhalley@gmail.com as a verified destination address.
+[[send_email]]
+name = "SEND_EMAIL"
+destination_address = "alanhalley@gmail.com"
+
 # Set secrets before deploying:
 #   wrangler secret put STRIPE_SECRET_KEY     ← Stripe secret key (sk_live_...)
 #   wrangler secret put STRIPE_WEBHOOK_SECRET ← from Stripe webhook dashboard

@@ -1,3 +1,5 @@
+import { EmailMessage } from "cloudflare:email";
+
 const CSS = `
   *{margin:0;padding:0;box-sizing:border-box}
   :root{--bg:#1a1a1a;--surface:#242424;--text:#f3eee2;--muted:#cdc6b8;--red:#e05a4d;--red-dim:#8b2020;--gold:#e6c13f;--green:#2ee06f;--green-dim:#1e8449;--border:#303030}
@@ -399,7 +401,7 @@ async function handleNominatePage(request, env) {
     <p class="page-sub" style="margin-top:.5rem">Put a bad actor on the board. They deserve it.</p>
 
     <div class="fee-box">
-      <p><strong>$20 nomination fee.</strong> This keeps the board signal-to-noise. Once approved, your nominee appears on the leaderboard with 0 votes and opens to public voting. We review within 48 hours. 50% of all proceeds go to the EFF.</p>
+      <p><strong>$20 nomination fee.</strong> This keeps the board signal-to-noise. Once approved, your nominee appears on the leaderboard with 0 votes and opens to public voting. We review within 48 hours. <strong>If we reject the nomination, the $20 is refunded in full.</strong> 50% of all proceeds go to the EFF.</p>
     </div>
 
     <form id="nominateForm">
@@ -541,7 +543,7 @@ async function handleNominatedPage() {
 
   const body = `<div class="error-page" style="text-align:left;max-width:500px;margin:5rem auto;padding:0 2rem">
     <h1 style="font-family:Georgia,serif;font-size:2rem;margin-bottom:1rem">Nomination received.</h1>
-    <p style="color:var(--muted);margin-bottom:.75rem">We'll review it within 48 hours. If approved, it goes on the leaderboard with 0 votes and opens to public voting.</p>
+    <p style="color:var(--muted);margin-bottom:.75rem">We'll review it within 48 hours. If approved, it goes on the leaderboard with 0 votes and opens to public voting. If we reject it, your $20 is refunded in full.</p>
     <p style="color:var(--muted);margin-bottom:2rem">Thank you for holding them accountable.</p>
     <a href="/leaderboard" class="btn-nominate" style="background:var(--red)">Back to Leaderboard →</a>
   </div>`;
@@ -549,6 +551,46 @@ async function handleNominatedPage() {
   return new Response(pageShell({ title: 'Nomination Received — Darth Vader MBA', nav, body }), {
     headers: { 'Content-Type': 'text/html;charset=utf-8' }
   });
+}
+
+async function sendNominationAlert(env, n) {
+  if (!env.SEND_EMAIL) {
+    console.log('webhook: SEND_EMAIL binding not configured, skipping alert');
+    return;
+  }
+  const from = 'alerts@darthvader.mba';
+  const to = 'alanhalley@gmail.com';
+  const text = [
+    'A paid nomination is waiting for review in /admin.',
+    '',
+    `Company:       ${n.companyName}`,
+    `Nominator:     ${n.nominatorName || '(anonymous)'}`,
+    `AI-submitted:  ${n.isAi ? 'yes' : 'no'}`,
+    `Stripe session: ${n.sessionId || '(none)'}`,
+    '',
+    'Citation:',
+    n.citation,
+    '',
+    'Review: https://darthvader.mba/admin (append your admin key)',
+    'Rejecting a nomination = refund the $20 in the Stripe dashboard.',
+  ].join('\r\n');
+  const mime = [
+    `From: Darth Vader MBA <${from}>`,
+    `To: ${to}`,
+    `Subject: Nomination pending review: ${n.companyName}`,
+    `Message-ID: <${crypto.randomUUID()}@darthvader.mba>`,
+    `Date: ${new Date().toUTCString()}`,
+    'MIME-Version: 1.0',
+    'Content-Type: text/plain; charset=utf-8',
+    '',
+    text,
+  ].join('\r\n');
+  try {
+    await env.SEND_EMAIL.send(new EmailMessage(from, to, mime));
+    console.log(`webhook: nomination alert emailed for ${n.companyName}`);
+  } catch (err) {
+    console.error(`webhook: nomination alert email failed: ${err.message}`);
+  }
 }
 
 async function handleStripeWebhook(request, env) {
@@ -597,6 +639,9 @@ async function handleStripeWebhook(request, env) {
           'INSERT INTO nominations (company_name, citation, nominator_name, stripe_session_id, status, is_ai) VALUES (?, ?, ?, ?, ?, ?)'
         ).bind(companyName, citation, nominatorName, session.id, 'pending', isAi).run();
         console.log(`webhook: nomination received for ${companyName} (pending review)`);
+        await sendNominationAlert(env, {
+          companyName, citation, nominatorName, isAi, sessionId: session.id,
+        });
       }
     } else {
       const nomineeSlug = meta.nominee_slug;
@@ -667,7 +712,7 @@ async function handleAdminPage(request, env) {
   if (!env.ADMIN_KEY || key !== env.ADMIN_KEY) return adminUnauthorized();
 
   const pending = await env.DB.prepare(
-    "SELECT id, company_name, citation, nominator_name, is_ai, created_at FROM nominations WHERE status = 'pending' ORDER BY created_at ASC"
+    "SELECT id, company_name, citation, nominator_name, is_ai, stripe_session_id, created_at FROM nominations WHERE status = 'pending' ORDER BY created_at ASC"
   ).all();
 
   const rows = pending.results.map(n => `
@@ -676,6 +721,7 @@ async function handleAdminPage(request, env) {
         <div class="nominee-name">${escapeHtml(n.company_name)}${n.is_ai ? '<span class="new-badge" style="background:var(--muted);color:#1a1a1a">AI agent</span>' : ''}</div>
         <div class="nominee-citation">"${escapeHtml(n.citation)}"</div>
         <div class="vote-label">${n.nominator_name ? 'by ' + escapeHtml(n.nominator_name) + ' · ' : ''}${escapeHtml(n.created_at || '')}</div>
+        <div class="vote-label" style="margin-top:.35rem">Reject = refund $20 in Stripe.${n.stripe_session_id ? ` <a href="https://dashboard.stripe.com/payments?query=${escapeHtml(n.stripe_session_id)}" target="_blank" rel="noopener" style="color:var(--muted);text-decoration:underline">${escapeHtml(n.stripe_session_id)}</a>` : ''}</div>
       </div>
       <div class="nominee-right">
         <form method="POST" action="/admin/action" style="display:flex;gap:.5rem">
