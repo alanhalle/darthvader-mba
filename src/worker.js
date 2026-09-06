@@ -270,9 +270,13 @@ async function handleNomineePage(request, env) {
   <meta property="og:title" content="${escapeHtml(ogTitle)}">
   <meta property="og:description" content="${escapeHtml(desc)}">
   <meta property="og:url" content="${escapeHtml(pageUrl)}">
-  <meta name="twitter:card" content="summary">
+  <meta property="og:image" content="${escapeHtml(url.origin)}/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="${escapeHtml(ogTitle)}">
-  <meta name="twitter:description" content="${escapeHtml(desc)}">`;
+  <meta name="twitter:description" content="${escapeHtml(desc)}">
+  <meta name="twitter:image" content="${escapeHtml(url.origin)}/og.png">`;
 
   const nav = `<nav>
     <a href="/" class="nav-logo"><span>Darth Vader MBA</span> · darthvader.mba</a>
