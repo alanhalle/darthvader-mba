@@ -74,6 +74,19 @@ const CSS = `
   .ai-field{display:flex;align-items:center;gap:.6rem}
   .ai-field input[type=checkbox]{width:1.1rem;height:1.1rem;flex-shrink:0}
   .ai-field label{text-transform:none;font-weight:400;letter-spacing:0;margin:0;font-size:.85rem;color:var(--muted)}
+  .n-main{max-width:680px}
+  .n-citation{font-size:1.15rem;line-height:1.7;color:var(--text);border-left:3px solid var(--red-dim);padding-left:1.25rem;margin:1.5rem 0 2rem}
+  .stat-row{display:flex;align-items:baseline;gap:1.5rem;margin-bottom:.5rem}
+  .stat-rank{font-size:.85rem;color:var(--muted)}
+  .n-actions{margin:2rem 0 0}
+  .n-actions .vote-pack-group{gap:.6rem;margin-top:.75rem}
+  .n-actions .btn-vote-pack{font-size:.85rem;padding:.7rem 1.2rem}
+  .share-box{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1.25rem 1.5rem;margin-top:2.5rem}
+  .share-box h3{font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:.35rem}
+  .share-box .hint{font-size:.8rem;color:var(--muted);margin-bottom:.85rem}
+  .share-text{width:100%;background:#111;border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:inherit;font-size:.9rem;padding:.75rem 1rem;resize:vertical;min-height:120px;line-height:1.55}
+  .btn-copy{margin-top:.75rem;padding:.55rem 1.1rem;background:transparent;color:var(--green);border:1px solid var(--green-dim);border-radius:4px;font-size:.8rem;font-weight:700;cursor:pointer;font-family:inherit}
+  .btn-copy:hover{background:var(--green);color:#fff}
 `;
 
 function escapeHtml(str) {
@@ -112,11 +125,12 @@ function tickerHtml(recent) {
   return `<div class="ticker-wrap"><div class="ticker-inner">${doubled}</div></div>`;
 }
 
-function pageShell({ title, nav, ticker = '', body }) {
+function pageShell({ title, nav, ticker = '', body, head = '' }) {
   return `<!doctype html><html lang="en"><head>
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
   <title>${title}</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  ${head}
   <style>${CSS}</style>
 </head><body>
   ${nav}
@@ -151,7 +165,7 @@ async function handleLeaderboard(request, env) {
     <div class="nominee-card${rank === 1 ? ' rank-1' : ''}">
       <div class="rank">#${rank}</div>
       <div class="nominee-body">
-        <div class="nominee-name">${escapeHtml(n.name)}${isNew ? '<span class="new-badge">New</span>' : ''}</div>
+        <div class="nominee-name"><a href="/n/${encodeURIComponent(n.slug)}" style="color:inherit">${escapeHtml(n.name)}</a>${isNew ? '<span class="new-badge">New</span>' : ''}</div>
         <div class="nominee-citation">"${escapeHtml(n.citation)}"</div>
         <div class="vote-bar-wrap"><div class="vote-bar" style="width:${barPct}%"></div></div>
         <div class="vote-label">${label}</div>
@@ -201,6 +215,159 @@ async function handleLeaderboard(request, env) {
   return new Response(withRefresh, {
     headers: { 'Content-Type': 'text/html;charset=utf-8' }
   });
+}
+
+function firstSentence(text) {
+  const m = String(text).match(/^.*?[.!?](\s|$)/);
+  return (m ? m[0] : String(text)).trim();
+}
+
+function notFoundPage(title, message) {
+  const nav = `<nav><a href="/" class="nav-logo"><span>Darth Vader MBA</span></a></nav>`;
+  const body = `<div class="error-page">
+    <h1>${escapeHtml(title)}</h1>
+    <p style="color:var(--muted);margin-bottom:1.5rem">${escapeHtml(message)}</p>
+    <a href="/leaderboard" class="btn-nominate" style="background:var(--red)">← Back to Leaderboard</a>
+  </div>`;
+  return new Response(pageShell({ title: `${title} — Darth Vader MBA`, nav, body }), {
+    status: 404,
+    headers: { 'Content-Type': 'text/html;charset=utf-8' }
+  });
+}
+
+async function handleNomineePage(request, env) {
+  const url = new URL(request.url);
+  const slug = decodeURIComponent(url.pathname.replace(/^\/n\//, '').replace(/\/+$/, ''));
+
+  const all = await env.DB.prepare(
+    'SELECT slug, name, citation, total_votes FROM nominees ORDER BY total_votes DESC, id ASC'
+  ).all();
+  const idx = all.results.findIndex(n => n.slug === slug);
+
+  if (idx === -1) {
+    return notFoundPage('Nominee not found', "That nominee isn't on the board.");
+  }
+
+  const nominee = all.results[idx];
+  const rank = idx + 1;
+  const total = all.results.length;
+  const maxVotes = all.results[0]?.total_votes || 1;
+  const barPct = maxVotes > 0 ? Math.round((nominee.total_votes / maxVotes) * 100) : 0;
+
+  const pageUrl = `${url.origin}/n/${encodeURIComponent(nominee.slug)}`;
+  const desc = nominee.citation.length > 200
+    ? nominee.citation.slice(0, 197) + '…'
+    : nominee.citation;
+  const ogTitle = `${nominee.name} — Darth Vader MBA`;
+
+  const shareLine = `Congratulations, ${nominee.name}. You've earned your Darth Vader MBA.\n\n${firstSentence(nominee.citation)}\n\n${pageUrl}`;
+
+  const head = `
+  <meta name="description" content="${escapeHtml(desc)}">
+  <link rel="canonical" href="${escapeHtml(pageUrl)}">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="Darth Vader MBA">
+  <meta property="og:title" content="${escapeHtml(ogTitle)}">
+  <meta property="og:description" content="${escapeHtml(desc)}">
+  <meta property="og:url" content="${escapeHtml(pageUrl)}">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="${escapeHtml(ogTitle)}">
+  <meta name="twitter:description" content="${escapeHtml(desc)}">`;
+
+  const nav = `<nav>
+    <a href="/" class="nav-logo"><span>Darth Vader MBA</span> · darthvader.mba</a>
+    <a href="/leaderboard" style="font-size:.82rem;color:var(--muted)">← Leaderboard</a>
+  </nav>`;
+
+  const body = `<main class="n-main">
+    <div class="page-header">
+      <h1>${escapeHtml(nominee.name)}</h1>
+    </div>
+    <div class="stat-row">
+      <span class="stat-rank">Rank #${rank} of ${total}</span>
+      <span class="stat-rank">${nominee.total_votes.toLocaleString()} ${nominee.total_votes === 1 ? 'vote' : 'votes'}</span>
+    </div>
+    <div class="vote-bar-wrap"><div class="vote-bar" style="width:${barPct}%"></div></div>
+
+    <p class="n-citation">${escapeHtml(nominee.citation)}</p>
+
+    <div class="n-actions">
+      <p style="font-size:.9rem;color:var(--muted)">$1 per vote. Half of every vote goes to the EFF.</p>
+      <div class="vote-pack-group">
+        <a href="/vote?nominee=${encodeURIComponent(nominee.slug)}&pack=5" class="btn-vote-pack">5 votes · $5</a>
+        <a href="/vote?nominee=${encodeURIComponent(nominee.slug)}&pack=25" class="btn-vote-pack">25 votes · $25</a>
+        <a href="/vote?nominee=${encodeURIComponent(nominee.slug)}&pack=100" class="btn-vote-pack">100 votes · $100</a>
+      </div>
+    </div>
+
+    <div class="share-box">
+      <h3>Share this graduate</h3>
+      <p class="hint">Copy and post it anywhere.</p>
+      <textarea class="share-text" id="shareText" readonly>${escapeHtml(shareLine)}</textarea>
+      <button class="btn-copy" id="copyBtn" type="button">Copy</button>
+    </div>
+
+    <div class="bottom-cta">
+      <p>Know a company that belongs on this board?</p>
+      <a class="btn-nominate" href="/nominate">Nominate a Company — $20</a>
+    </div>
+
+    <a href="/leaderboard" class="back">← Back to the leaderboard</a>
+  </main>
+
+  <script>
+    document.getElementById('copyBtn').addEventListener('click', async function () {
+      const el = document.getElementById('shareText');
+      try {
+        await navigator.clipboard.writeText(el.value);
+      } catch (err) {
+        el.select();
+        document.execCommand('copy');
+      }
+      this.textContent = 'Copied';
+      setTimeout(() => { this.textContent = 'Copy'; }, 1800);
+    });
+  </script>`;
+
+  return new Response(pageShell({ title: ogTitle, nav, body, head }), {
+    headers: { 'Content-Type': 'text/html;charset=utf-8' }
+  });
+}
+
+async function handleSitemap(request, env) {
+  const origin = new URL(request.url).origin;
+  const nominees = await env.DB.prepare('SELECT slug FROM nominees ORDER BY id ASC').all();
+
+  const urls = [
+    `${origin}/`,
+    `${origin}/leaderboard`,
+    `${origin}/nominate`,
+    `${origin}/terms`,
+    ...nominees.results.map(n => `${origin}/n/${encodeURIComponent(n.slug)}`),
+  ];
+
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${urls.map(u => `  <url><loc>${escapeHtml(u)}</loc></url>`).join('\n')}
+</urlset>`;
+
+  return new Response(xml, {
+    headers: { 'Content-Type': 'application/xml;charset=utf-8' }
+  });
+}
+
+function handleRobots(request) {
+  const origin = new URL(request.url).origin;
+  const body = `User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /checkout
+Disallow: /checkout-nominate
+Disallow: /webhook/
+
+Sitemap: ${origin}/sitemap.xml
+`;
+  return new Response(body, { headers: { 'Content-Type': 'text/plain;charset=utf-8' } });
 }
 
 async function handleVotePage(request, env) {
@@ -791,6 +958,18 @@ export default {
 
     if (url.pathname === '/leaderboard' || url.pathname === '/leaderboard/') {
       return handleLeaderboard(request, env);
+    }
+
+    if (url.pathname.startsWith('/n/')) {
+      return handleNomineePage(request, env);
+    }
+
+    if (url.pathname === '/sitemap.xml') {
+      return handleSitemap(request, env);
+    }
+
+    if (url.pathname === '/robots.txt') {
+      return handleRobots(request);
     }
 
     if (url.pathname === '/vote') {
