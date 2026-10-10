@@ -1,5 +1,9 @@
 import { EmailMessage } from "cloudflare:email";
 
+// Canonical host for <link rel="canonical"> tags — always the apex domain,
+// never the visited origin, so www/apex don't get flagged as unresolved duplicates.
+const CANONICAL_ORIGIN = 'https://darthvader.mba';
+
 const CSS = `
   *{margin:0;padding:0;box-sizing:border-box}
   :root{--bg:#1a1a1a;--surface:#242424;--text:#f3eee2;--muted:#cdc6b8;--red:#e05a4d;--red-dim:#8b2020;--gold:#e6c13f;--green:#2ee06f;--green-dim:#1e8449;--border:#303030}
@@ -207,6 +211,7 @@ async function handleLeaderboard(request, env) {
     nav,
     ticker: tickerHtml(recent.results),
     body,
+    head: `<link rel="canonical" href="${CANONICAL_ORIGIN}/leaderboard">`,
   });
 
   // Auto-refresh every 60s
@@ -255,6 +260,7 @@ async function handleNomineePage(request, env) {
   const barPct = maxVotes > 0 ? Math.round((nominee.total_votes / maxVotes) * 100) : 0;
 
   const pageUrl = `${url.origin}/n/${encodeURIComponent(nominee.slug)}`;
+  const canonicalUrl = `${CANONICAL_ORIGIN}/n/${encodeURIComponent(nominee.slug)}`;
   const desc = nominee.citation.length > 200
     ? nominee.citation.slice(0, 197) + '…'
     : nominee.citation;
@@ -264,7 +270,7 @@ async function handleNomineePage(request, env) {
 
   const head = `
   <meta name="description" content="${escapeHtml(desc)}">
-  <link rel="canonical" href="${escapeHtml(pageUrl)}">
+  <link rel="canonical" href="${escapeHtml(canonicalUrl)}">
   <meta property="og:type" content="article">
   <meta property="og:site_name" content="Darth Vader MBA">
   <meta property="og:title" content="${escapeHtml(ogTitle)}">
@@ -339,15 +345,14 @@ async function handleNomineePage(request, env) {
 }
 
 async function handleSitemap(request, env) {
-  const origin = new URL(request.url).origin;
   const nominees = await env.DB.prepare('SELECT slug FROM nominees ORDER BY id ASC').all();
 
   const urls = [
-    `${origin}/`,
-    `${origin}/leaderboard`,
-    `${origin}/nominate`,
-    `${origin}/terms`,
-    ...nominees.results.map(n => `${origin}/n/${encodeURIComponent(n.slug)}`),
+    `${CANONICAL_ORIGIN}/`,
+    `${CANONICAL_ORIGIN}/leaderboard`,
+    `${CANONICAL_ORIGIN}/nominate`,
+    `${CANONICAL_ORIGIN}/terms/`,
+    ...nominees.results.map(n => `${CANONICAL_ORIGIN}/n/${encodeURIComponent(n.slug)}`),
   ];
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
@@ -361,7 +366,6 @@ ${urls.map(u => `  <url><loc>${escapeHtml(u)}</loc></url>`).join('\n')}
 }
 
 function handleRobots(request) {
-  const origin = new URL(request.url).origin;
   const body = `User-agent: *
 Allow: /
 Disallow: /admin
@@ -369,7 +373,7 @@ Disallow: /checkout
 Disallow: /checkout-nominate
 Disallow: /webhook/
 
-Sitemap: ${origin}/sitemap.xml
+Sitemap: ${CANONICAL_ORIGIN}/sitemap.xml
 `;
   return new Response(body, { headers: { 'Content-Type': 'text/plain;charset=utf-8' } });
 }
